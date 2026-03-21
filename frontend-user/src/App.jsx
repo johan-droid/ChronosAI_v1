@@ -6,14 +6,16 @@ import Dashboard from './pages/Dashboard';
 
 // The Frontend Bouncer: Protects routes from unauthenticated users
 const ProtectedRoute = ({ children }) => {
-    const { user } = useContext(AuthContext);
-    
-    // If no user is logged in, redirect them to the login page immediately
+    const { user, loading } = useContext(AuthContext);
+
+    if (loading) {
+        return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    }
+
     if (!user) {
         return <Navigate to="/login" replace />;
     }
-    
-    // Otherwise, let them through
+
     return children;
 };
 

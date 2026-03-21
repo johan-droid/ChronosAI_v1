@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
@@ -12,17 +13,23 @@ export const AuthProvider = ({ children }) => {
 
     // Run once when the app loads
     useEffect(() => {
-        // Check if a user session exists in the browser's local storage
-        const storedUser = localStorage.getItem('user');
-        const storedToken = localStorage.getItem('token');
+        try {
+            // Check if a user session exists in the browser's local storage
+            const storedUser = localStorage.getItem('user');
+            const storedToken = localStorage.getItem('token');
 
-        if (storedUser && storedToken) {
-            setUser(JSON.parse(storedUser));
-            setToken(storedToken);
-            // Automatically attach the token to all future Axios requests!
-            axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+            if (storedUser && storedToken) {
+                setUser(JSON.parse(storedUser));
+                setToken(storedToken);
+                // Automatically attach the token to all future Axios requests!
+                axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+            }
+        } catch (error) {
+            // LocalStorage can throw in restricted environments; avoid locking the app in white-screen
+            console.error('AuthContext error reading localStorage:', error);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     }, []);
 
     const login = (userData, authToken) => {

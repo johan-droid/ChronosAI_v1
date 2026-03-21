@@ -11,8 +11,10 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api/auth', require('./routes/authRoutes')); 
-app.use('/api/chat', require('./routes/dialogueRoutes')); // ADD THIS LINE
-app.use('/api/calendar', require('./routes/calendarRoutes')); // ADD THIS LINE
+app.use('/api/chat', require('./routes/dialogueRoutes')); 
+app.use('/api/calendar', require('./routes/calendarRoutes')); 
+app.use('/api/meetings', require('./routes/meetingRoutes')); 
+app.use('/api/users', require('./routes/usersRoutes'));
 
 app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'success', message: 'ChronosAI Backend API is up!' });
