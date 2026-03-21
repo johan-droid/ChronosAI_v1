@@ -9,6 +9,21 @@ export default function MeetingCalendar() {
     const [selectedDayMeetings, setSelectedDayMeetings] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    // Helper to format a JS Date object into "YYYY-MM-DD" to match our MongoDB string format
+    const formatDateString = (dateObj) => {
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    // Filter the meetings array for the specifically clicked date
+    const filterMeetingsForDate = useCallback((selectedDate, allMeetings = meetings) => {
+        const formattedDate = formatDateString(selectedDate);
+        const filtered = allMeetings.filter(m => m.date === formattedDate);
+        setSelectedDayMeetings(filtered);
+    }, [meetings]);
+
     // Fetch meetings when the component loads
     useEffect(() => {
         const fetchMeetings = async () => {
@@ -27,25 +42,53 @@ export default function MeetingCalendar() {
         fetchMeetings();
     }, [filterMeetingsForDate]);
 
-    // Helper to format a JS Date object into "YYYY-MM-DD" to match our MongoDB string format
-    const formatDateString = (dateObj) => {
-        const year = dateObj.getFullYear();
-        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const day = String(dateObj.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
-
-    // Filter the meetings array for the specifically clicked date
-    const filterMeetingsForDate = useCallback((selectedDate, allMeetings = meetings) => {
-        const formattedDate = formatDateString(selectedDate);
-        const filtered = allMeetings.filter(m => m.date === formattedDate);
-        setSelectedDayMeetings(filtered);
-    }, [meetings]);
-
     // Handle clicking a day on the calendar
     const handleDayClick = (value) => {
         setDate(value);
         filterMeetingsForDate(value);
+    };
+
+    const refreshMeetings = async () => {
+        setIsLoading(true);
+        try {
+            const response = await api.get('/meetings');
+            setMeetings(response.data);
+            filterMeetingsForDate(date, response.data);
+        } catch (error) {
+            console.error('Failed to refresh meetings:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const cancelMeeting = async (meetingId) => {
+        try {
+            await api.post(`/meetings/${meetingId}/cancel`);
+            await refreshMeetings();
+            alert('Meeting cancelled successfully.');
+        } catch (error) {
+            console.error('Cancel failed:', error);
+            alert('Unable to cancel meeting.');
+        }
+    };
+
+    const rescheduleMeeting = async (meeting) => {
+        const date = prompt('New date (YYYY-MM-DD):', meeting.date);
+        const time = prompt('New time (HH:MM or 3pm):', meeting.startTime);
+        const duration = prompt('New duration (minutes):', meeting.duration);
+
+        if (!date && !time && !duration) {
+            return;
+        }
+
+        try {
+            await api.post(`/meetings/${meeting._id}/reschedule`, { date, time, duration });
+            await refreshMeetings();
+            alert('Meeting rescheduled successfully.');
+        } catch (error) {
+            console.error('Reschedule failed:', error);
+            alert('Unable to reschedule meeting.');
+        }
     };
 
     // Dynamically inject Tailwind classes into specific calendar tiles
@@ -114,6 +157,20 @@ export default function MeetingCalendar() {
                                     <span className="flex items-center gap-2">
                                         🌐 {meeting.timezone}
                                     </span>
+                                </div>
+                                <div className="mt-3 flex gap-2">
+                                    <button
+                                        onClick={() => rescheduleMeeting(meeting)}
+                                        className="text-xs px-2 py-1 bg-yellow-200 text-yellow-900 rounded-md hover:bg-yellow-300 transition"
+                                    >
+                                        Reschedule
+                                    </button>
+                                    <button
+                                        onClick={() => cancelMeeting(meeting._id)}
+                                        className="text-xs px-2 py-1 bg-red-200 text-red-800 rounded-md hover:bg-red-300 transition"
+                                    >
+                                        Cancel
+                                    </button>
                                 </div>
                             </div>
                         ))}

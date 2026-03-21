@@ -1,4 +1,4 @@
-const { createMeetingRecord } = require('../meetingManager/scheduleMeeting');
+const { createMeetingRecord, getNextUpcomingMeeting, rescheduleMeeting, cancelMeeting } = require('../meetingManager/scheduleMeeting');
 const axios = require('axios');
 const { getSession, updateSession, clearSession } = require('../dialogueManager/stateTracker');
 
@@ -53,29 +53,71 @@ const processChatMessage = async (req, res) => {
                 return res.status(200).json({ reply: "How long should the meeting last? (e.g., 30 minutes)" });
             }
 
-            // If we reach this line, all required fields are filled!
-            // In the next step, we will trigger the Scheduling Engine here.
-            // --- NEW SCHEDULING LOGIC ---
-            // Trigger the Scheduling Engine
             const scheduleResult = await createMeetingRecord(session, userId, req.user.timezone);
 
             if (!scheduleResult.success) {
-                // If there is a conflict, clear the time so the user can pick a new one
-                updateSession(userId, { time: null }); 
+                updateSession(userId, { time: null });
                 return res.status(200).json({ reply: `I couldn't schedule that: ${scheduleResult.message} What other time works for you?` });
             }
 
-            clearSession(userId); // Reset conversation after successful scheduling
+            clearSession(userId);
 
-            return res.status(200).json({ 
+            return res.status(200).json({
                 reply: `Success! I have scheduled a ${scheduleResult.meeting.duration}-minute meeting with ${scheduleResult.meeting.participants.join(', ')} on ${scheduleResult.meeting.date} at ${scheduleResult.meeting.startTime}.`,
                 meetingDetails: scheduleResult.meeting
             });
-            // ----------------------------
         }
 
-        // Placeholder for future logic
-        return res.status(200).json({ reply: "Reschedule/Cancel logic coming soon." });
+        if (session.intent === 'reschedule') {
+            if (!session.date && !session.time && !session.duration) {
+                return res.status(200).json({ reply: 'Please tell me the new date and/or time and/or duration for the meeting you want to reschedule.' });
+            }
+
+            // Determine target meeting (falls back to next upcoming meeting)
+            let targetMeeting = session.meetingId
+                ? await getNextUpcomingMeeting(userId) // no meetingId path stored yet; we don't have separate meeting ID extraction
+                : await getNextUpcomingMeeting(userId);
+
+            if (!targetMeeting) {
+                return res.status(200).json({ reply: 'I could not find an upcoming meeting to reschedule. You can schedule one first.' });
+            }
+
+            const result = await rescheduleMeeting(targetMeeting._id, userId, {
+                date: session.date,
+                time: session.time,
+                duration: session.duration
+            });
+
+            if (!result.success) {
+                return res.status(200).json({ reply: `Could not reschedule meeting: ${result.message}` });
+            }
+
+            clearSession(userId);
+            return res.status(200).json({
+                reply: `Your meeting has been rescheduled to ${result.meeting.date} at ${result.meeting.startTime} for ${result.meeting.duration} minutes.`,
+                meetingDetails: result.meeting
+            });
+        }
+
+        if (session.intent === 'cancel') {
+            // Find next upcoming meeting for cancellation
+            const targetMeeting = await getNextUpcomingMeeting(userId);
+
+            if (!targetMeeting) {
+                return res.status(200).json({ reply: 'There is no upcoming meeting to cancel.' });
+            }
+
+            const result = await cancelMeeting(targetMeeting._id, userId);
+
+            if (!result.success) {
+                return res.status(200).json({ reply: `Could not cancel meeting: ${result.message}` });
+            }
+
+            clearSession(userId);
+            return res.status(200).json({ reply: `Meeting on ${result.meeting.date} at ${result.meeting.startTime} has been cancelled.` });
+        }
+
+        return res.status(200).json({ reply: "I can help with schedule, reschedule, and cancel in a single flow; try again with one command." });
 
     } catch (error) {
         console.error("Error in Dialogue Manager:", error.message);

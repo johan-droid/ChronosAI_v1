@@ -18,12 +18,13 @@ def extract_entities(text: str) -> dict:
     info = MeetingInfo(intent="unknown")
     
     # 1. Intent Detection
-    if any(word in text_lower for word in ["schedule", "book", "set up"]):
-        info.intent = "schedule"
-    elif any(word in text_lower for word in ["reschedule", "move", "change"]):
+    # Edge case: 'reschedule' includes 'schedule' as substring, so check more specific selections first.
+    if any(word in text_lower for word in ["reschedule", "move", "change"]):
         info.intent = "reschedule"
     elif any(word in text_lower for word in ["cancel", "delete", "remove"]):
         info.intent = "cancel"
+    elif any(word in text_lower for word in ["schedule", "book", "set up"]):
+        info.intent = "schedule"
         
     # 2. Date Extraction (Simple mock)
     if "tomorrow" in text_lower:
