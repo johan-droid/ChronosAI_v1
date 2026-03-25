@@ -1,8 +1,10 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthProvider, AuthContext } from './context/AuthContext';
+import PortalSelection from './pages/PortalSelection';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import OAuthRedirect from './pages/OAuthRedirect';
 
 // The Frontend Bouncer: Protects routes from unauthenticated users
 const ProtectedRoute = ({ children }) => {
@@ -22,7 +24,7 @@ const ProtectedRoute = ({ children }) => {
 function AppRoutes() {
     return (
         <Routes>
-            {/* Public Route */}
+            <Route path="/" element={<PortalSelection />} />
             <Route path="/login" element={<Login />} />
 
             {/* Protected Route */}
@@ -34,6 +36,9 @@ function AppRoutes() {
                     </ProtectedRoute>
                 } 
             />
+
+            {/* OAuth callback handler from Google */}
+            <Route path="/oauth2/redirect" element={<OAuthRedirect />} />
 
             {/* Catch-all: Redirect unknown URLs to the dashboard (which will redirect to login if needed) */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

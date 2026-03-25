@@ -18,6 +18,7 @@ export default function Login() {
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [googleLoading, setGoogleLoading] = useState(false);
 
     // Handle input changes dynamically
     const handleChange = (e) => {
@@ -110,6 +111,31 @@ export default function Login() {
                         {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
                     </button>
                 </form>
+
+                <div className="flex items-center justify-center gap-2 py-2">
+                    <span className="h-px flex-1 bg-gray-200" />
+                    <span className="text-xs text-gray-400">or</span>
+                    <span className="h-px flex-1 bg-gray-200" />
+                </div>
+
+                <button
+                    type="button"
+                    onClick={async () => {
+                        try {
+                            setError('');
+                            setGoogleLoading(true);
+                            const response = await api.get('/auth/google-url');
+                            window.location.href = response.data.url;
+                        } catch (err) {
+                            setError('Unable to start Google sign-in. Try again.');
+                            setGoogleLoading(false);
+                        }
+                    }}
+                    disabled={googleLoading}
+                    className="w-full px-4 py-2 font-bold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:outline-none transition-colors"
+                >
+                    {googleLoading ? 'Redirecting to Google...' : 'Continue with Google'}
+                </button>
 
                 <div className="text-center">
                     <button 
