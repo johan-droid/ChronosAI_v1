@@ -5,6 +5,7 @@ import PortalSelection from './pages/PortalSelection';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import OAuthRedirect from './pages/OAuthRedirect';
+import JitsiRoom from './pages/JitsiRoom';
 
 // The Frontend Bouncer: Protects routes from unauthenticated users
 const ProtectedRoute = ({ children }) => {
@@ -39,6 +40,7 @@ function AppRoutes() {
 
             {/* OAuth callback handler from Google */}
             <Route path="/oauth2/redirect" element={<OAuthRedirect />} />
+            <Route path="/jitsi/:room" element={<JitsiRoom />} />
 
             {/* Catch-all: Redirect unknown URLs to the dashboard (which will redirect to login if needed) */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

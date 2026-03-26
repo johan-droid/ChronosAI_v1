@@ -2,11 +2,19 @@ const request = require('supertest');
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const axios = require('axios');
+
+jest.mock('axios');
+
+jest.mock('../integrations/emailService', () => ({
+  sendCustomEmail: jest.fn(async () => true),
+  sendMeetingInvite: jest.fn(async () => true),
+  sendMeetingReschedule: jest.fn(async () => true),
+  sendMeetingCancellation: jest.fn(async () => true),
+}));
+
 const app = require('../server');
 const User = require('../models/User');
 const Meeting = require('../models/Meeting');
-
-jest.mock('axios');
 
 describe('Meeting reschedule/cancel endpoints', () => {
   let mongoServer;
@@ -112,5 +120,90 @@ describe('Meeting reschedule/cancel endpoints', () => {
     // second should return conflict from createMeetingRecord
     expect(schedule2.status).toBe(200);
     expect(schedule2.body.reply).toMatch(/already have a meeting scheduled/i);
+  });
+
+  test('should support waiting room flow with token issuance', async () => {
+    axios.post.mockResolvedValue({ data: {
+      extracted_data: {
+        intent: 'schedule',
+        date: '2026-04-01',
+        time: '11:00',
+        duration: '30',
+        participants: ['alice@example.com']
+      }
+    }});
+
+    const schedule = await api
+      .post('/api/chat')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ message: 'Schedule meeting with alice next week at 11am' });
+
+    expect(schedule.status).toBe(200);
+    const meetingId = schedule.body.meetingDetails._id;
+
+    // Toggle waiting room in DB directly since no API update endpoint exists
+    await Meeting.findByIdAndUpdate(meetingId, { waitingRoomEnabled: true });
+
+    // create an external non-organizer user
+    const otherEmail = `other_${Date.now()}@example.com`;
+    await api.post('/api/auth/register').send({ name: 'Other User', email: otherEmail, password: 'password123', timezone: 'UTC' });
+    const otherLogin = await api.post('/api/auth/login').send({ email: otherEmail, password: 'password123' });
+    const otherToken = otherLogin.body.token;
+
+    // non-owner requests access
+    const request = await api
+      .post(`/api/meetings/${meetingId}/request-access`)
+      .set('Authorization', `Bearer ${otherToken}`)
+      .send();
+    expect(request.status).toBe(200);
+
+    // non-owner cannot get join token until approved
+    const tokenBefore = await api
+      .get(`/api/meetings/${meetingId}/join-token`)
+      .set('Authorization', `Bearer ${otherToken}`);
+    expect(tokenBefore.status).toBe(403);
+
+    // organizer approves request
+    const approve = await api
+      .post(`/api/meetings/${meetingId}/approve-access`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ email: otherEmail });
+    expect(approve.status).toBe(200);
+
+    // now non-owner can obtain join token
+    const tokenResponse = await api
+      .get(`/api/meetings/${meetingId}/join-token`)
+      .set('Authorization', `Bearer ${otherToken}`);
+    expect(tokenResponse.status).toBe(200);
+    expect(tokenResponse.body.token).toBeDefined();
+
+    // validate token should succeed
+    const validate = await api
+      .post(`/api/meetings/${meetingId}/validate-token`)
+      .set('Authorization', `Bearer ${otherToken}`)
+      .send({ token: tokenResponse.body.token });
+    expect(validate.status).toBe(200);
+    expect(validate.body.valid).toBe(true);
+
+    // invalid token should fail
+    const badValidate = await api
+      .post(`/api/meetings/${meetingId}/validate-token`)
+      .set('Authorization', `Bearer ${otherToken}`)
+      .send({ token: 'invalidtoken123' });
+    expect(badValidate.status).toBe(403);
+  });
+
+  test('should send custom formatted email via /api/meetings/custom-email', async () => {
+    const response = await api
+      .post('/api/meetings/custom-email')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        to: 'recipient@example.com',
+        subject: 'Custom Template Test',
+        html: '<p>This is a custom HTML body.</p>'
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.message).toBe('Custom email sent.');
   });
 });

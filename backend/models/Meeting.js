@@ -31,6 +31,46 @@ const meetingSchema = new mongoose.Schema({
         required: true,
         default: 'UTC'
     },
+    meetingRoom: {
+        type: String,
+        default: null
+    },
+    meetingLink: {
+        type: String,
+        default: null
+    },
+    meetingPassword: {
+        type: String,
+        default: null
+    },
+    waitingRoomEnabled: {
+        type: Boolean,
+        default: false
+    },
+    pendingRequests: [{
+        type: String
+    }],
+    approvedRequests: [{
+        type: String
+    }],
+    joinTokens: [{
+        email: String,
+        token: String,
+        createdAt: { type: Date, default: Date.now },
+        expiresAt: { type: Date }
+    }],
+    organizerEmail: {
+        type: String,
+        required: true
+    },
+    emailAudit: [{
+        eventType: { type: String },
+        to: [{ type: String }],
+        cc: [{ type: String }],
+        status: { type: String, enum: ['success', 'failed'] },
+        message: { type: String },
+        createdAt: { type: Date, default: Date.now }
+    }],
     status: {
         type: String,
         enum: ['scheduled', 'rescheduled', 'cancelled'],
