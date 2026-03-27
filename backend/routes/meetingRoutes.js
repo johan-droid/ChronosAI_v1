@@ -10,6 +10,7 @@ const {
     getPendingRequestsController,
     getJoinTokenController,
     validateJoinTokenController,
+    toggleWaitingRoomController,
     rescheduleMeetingController,
     cancelMeetingController,
     sendCustomEmailController
@@ -24,6 +25,7 @@ router.post('/:id/request-access', protect, requestWaitingRoomAccessController);
 router.post('/:id/approve-access', protect, approveWaitingRoomRequestController);
 router.post('/:id/decline-access', protect, declineWaitingRoomRequestController);
 router.get('/:id/pending-requests', protect, getPendingRequestsController);
+router.put('/:id/waiting-room', protect, toggleWaitingRoomController);
 router.get('/:id/join-token', protect, getJoinTokenController);
 router.post('/:id/validate-token', protect, validateJoinTokenController);
 router.post('/:id/reschedule', protect, rescheduleMeetingController);

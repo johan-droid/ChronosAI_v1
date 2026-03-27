@@ -1,0 +1,7 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Meeting reschedule/cancel endpoints should support waiting room flow with token issuance 1`] = `
+{
+  "pendingRequests": [],
+}
+`;

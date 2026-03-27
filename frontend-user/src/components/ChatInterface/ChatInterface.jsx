@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useContext } from 'react';
+import { motion } from 'framer-motion';
 import { AuthContext } from '../../context/AuthContext';
 import api from '../../services/api';
 
@@ -11,8 +12,14 @@ export default function ChatInterface() {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
+    // last prompt templates from localStorage
+    const [favorites, setFavorites] = useState([]);
+
     // Set an initial welcome message when user context becomes available
     useEffect(() => {
+        const saved = JSON.parse(localStorage.getItem('chronosai-chat-favorites') || '[]');
+        setFavorites(saved);
+
         if (!user) return;
 
         const greeting = {
@@ -37,6 +44,13 @@ export default function ChatInterface() {
     const handleSend = async (e) => {
         e.preventDefault();
         if (!input.trim()) return;
+
+        // Save the prompt to favorites so user can reuse it quickly
+        if (!favorites.includes(input.trim())) {
+            const updated = [input.trim(), ...favorites].slice(0, 10);
+            setFavorites(updated);
+            localStorage.setItem('chronosai-chat-favorites', JSON.stringify(updated));
+        }
 
         const userText = input.trim();
         
@@ -76,20 +90,92 @@ export default function ChatInterface() {
         }
     };
 
+    const removeFavorite = (template) => {
+        const updated = favorites.filter((item) => item !== template);
+        setFavorites(updated);
+        localStorage.setItem('chronosai-chat-favorites', JSON.stringify(updated));
+    };
+
     return (
-        <div className="flex flex-col h-[600px] w-full bg-white border border-gray-200 rounded-xl shadow-sm">
+        <div className="flex flex-col h-[520px] sm:h-[640px] lg:h-[720px] w-full bg-white border border-gray-200 rounded-xl shadow-sm">
             {/* Chat Header */}
             <div className="p-4 border-b border-gray-200 bg-blue-50 rounded-t-xl">
-                <h2 className="font-semibold text-blue-800 flex items-center">
-                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                    ChronosAI Assistant
-                </h2>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                    <h2 className="font-semibold text-blue-800 flex items-center">
+                        <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                        ChronosAI Assistant
+                    </h2>
+                    <span className="text-xs text-gray-500">AI-powered scheduling in natural language</span>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                    {['Book 30m with Alex', 'Find 2pm tomorrow', 'Reschedule Friday'].map((q) => (
+                        <button
+                            key={q}
+                            className="px-2 py-1 border border-blue-200 rounded-md text-blue-600 hover:bg-blue-100 transition"
+                            onClick={() => setInput(q)}
+                        >
+                            {q}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-2 items-center">
+                    <button
+                        onClick={() => {
+                            if (!input.trim()) return;
+                            const newFavorite = input.trim();
+                            if (!favorites.includes(newFavorite)) {
+                                const next = [newFavorite, ...favorites].slice(0, 10);
+                                setFavorites(next);
+                                localStorage.setItem('chronosai-chat-favorites', JSON.stringify(next));
+                            }
+                        }}
+                        className="text-xs px-2 py-1 border border-slate-300 rounded-md bg-white hover:bg-slate-50"
+                    >
+                        Save prompt as favorite
+                    </button>
+                    <span className="text-slate-500 text-xs">Favorites</span>
+                </div>
+
+                {favorites.length > 0 && (
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                        {favorites.map((template) => (
+                            <motion.div
+                                key={template}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="flex items-center justify-between px-2 py-1 bg-white border border-gray-200 rounded-lg"
+                            >
+                                <button
+                                    onClick={() => setInput(template)}
+                                    className="text-slate-600 hover:text-blue-600 truncate text-left flex-1"
+                                >
+                                    {template}
+                                </button>
+                                <button
+                                    onClick={() => removeFavorite(template)}
+                                    className="ml-2 text-red-500 hover:text-red-700"
+                                    title="Remove favorite"
+                                >
+                                    ✕
+                                </button>
+                            </motion.div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Chat Messages Area */}
             <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-50">
-                {messages.map((msg) => (
-                    <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                {messages.map((msg, idx) => (
+                    <motion.div
+                        key={msg.id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.25, delay: idx * 0.03 }}
+                        className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
                         <div className={`max-w-[80%] p-3 text-sm rounded-2xl ${
                             msg.sender === 'user' 
                                 ? 'bg-blue-600 text-white rounded-br-none' 
@@ -99,7 +185,7 @@ export default function ChatInterface() {
                         }`}>
                             {msg.text}
                         </div>
-                    </div>
+                    </motion.div>
                 ))}
                 
                 {/* Typing Indicator */}

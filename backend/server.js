@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const connectDB = require('./config/db'); // ADD THIS LINE
+const connectDB = require('./config/db');
+const { cleanupExpiredTokens } = require('./meetingManager/scheduleMeeting');
 
 const app = express();
 app.use(cors()); 
@@ -23,6 +24,18 @@ if (require.main === module) {
     connectDB();
     app.listen(PORT, () => {
         console.log(`🚀 Server is listening on port ${PORT}`);
+
+        // Start periodic cleanup for expired JWT-like meeting join tokens.
+        setInterval(async () => {
+            try {
+                const result = await cleanupExpiredTokens();
+                if (result.modifiedCount > 0) {
+                    console.log(`🧹 Cleanup: removed expired tokens from ${result.modifiedCount} meeting(s).`);
+                }
+            } catch (error) {
+                console.error('Error during cleanupExpiredTokens:', error);
+            }
+        }, 60 * 1000); // every 1 minute
     });
 }
 

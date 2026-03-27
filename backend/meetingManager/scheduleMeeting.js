@@ -165,6 +165,26 @@ const requestWaitingRoomAccess = async (meetingId, userEmail) => {
     return { success: true, message: 'Request submitted.' };
 };
 
+const toggleWaitingRoom = async (meetingId, organizerId, enabled) => {
+    const meeting = await getMeetingById(meetingId, organizerId);
+    if (!meeting) {
+        return { success: false, message: 'Meeting not found or access denied.' };
+    }
+
+    meeting.waitingRoomEnabled = enabled;
+    await meeting.save();
+    return { success: true, message: `Waiting room ${enabled ? 'enabled' : 'disabled'}.`, meeting };
+};
+
+const cleanupExpiredTokens = async () => {
+    const now = new Date();
+    const results = await Meeting.updateMany(
+        { 'joinTokens.expiresAt': { $lte: now } },
+        { $pull: { joinTokens: { expiresAt: { $lte: now } } } }
+    );
+    return results;
+};
+
 const approveWaitingRoomRequest = async (meetingId, organizerId, userEmail) => {
     const meeting = await getMeetingById(meetingId, organizerId);
     if (!meeting) {
@@ -314,5 +334,7 @@ module.exports = {
     approveWaitingRoomRequest,
     declineWaitingRoomRequest,
     generateJoinToken,
-    validateJoinToken
+    validateJoinToken,
+    toggleWaitingRoom,
+    cleanupExpiredTokens
 };

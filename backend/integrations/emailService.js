@@ -41,8 +41,9 @@ const meetingTemplateSource = `
     <tr><td style="padding: 4px 8px;"><strong>Topic:</strong></td><td style="padding: 4px 8px;">{{title}}</td></tr>
     <tr><td style="padding: 4px 8px;"><strong>Date:</strong></td><td style="padding: 4px 8px;">{{date}}</td></tr>
     <tr><td style="padding: 4px 8px;"><strong>Time:</strong></td><td style="padding: 4px 8px;">{{startTime}}</td></tr>
-    <tr><td style="padding: 4px 8px;"><strong>Duration:</strong></td><td style="padding: 4px 8px;">{{duration}} minutes</td></tr>
-    <tr><td style="padding: 4px 8px;"><strong>Meeting Link:</strong></td><td style="padding: 4px 8px;"><a href="{{meetingLink}}">Join Meeting</a></td></tr>
+    <tr><td style="padding: 4px 8px;"><strong>Duration:</strong></td><td style="padding: 4px 8px;">{{duration}} minutes</td></tr>    <tr><td style="padding: 4px 8px;"><strong>Meeting Room:</strong></td><td style="padding: 4px 8px;">{{meetingRoom}}</td></tr>
+    <tr><td style="padding: 4px 8px;"><strong>Meeting Password:</strong></td><td style="padding: 4px 8px;">{{meetingPassword}}</td></tr>
+    <tr><td style="padding: 4px 8px;"><strong>Waiting Room:</strong></td><td style="padding: 4px 8px;">{{waitingRoomEnabled}}</td></tr>    <tr><td style="padding: 4px 8px;"><strong>Meeting Link:</strong></td><td style="padding: 4px 8px;"><a href="{{meetingLink}}">Join Meeting</a></td></tr>
     <tr><td style="padding: 4px 8px;"><strong>Attendees:</strong></td><td style="padding: 4px 8px;">{{participants}}</td></tr>
   </table>
   <p style="margin-top: 16px;"><a href="{{meetingLink}}" style="background-color:#2563eb;color:#fff;padding:10px 14px;border-radius:6px;text-decoration:none;">Open meeting details</a></p>
@@ -182,6 +183,9 @@ const sendMeetingEmail = async (meetingDetails, type) => {
         date: meetingDetails.date,
         startTime: meetingDetails.startTime,
         duration: meetingDetails.duration,
+        meetingRoom: meetingDetails.meetingRoom || '',
+        meetingPassword: meetingDetails.meetingPassword || 'None',
+        waitingRoomEnabled: meetingDetails.waitingRoomEnabled ? 'Enabled' : 'Disabled',
         participants: meetingDetails.participants.join(', '),
         meetingLink: meetingDetails.meetingLink || `${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard/meetings/${meetingDetails._id}`
     });

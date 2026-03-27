@@ -464,8 +464,7 @@ export default function MeetingCalendar() {
                                             ))
                                         )}
                                     </div>
-                                )
-                                </div>
+                                )}
                             </div>
                         ))}
                     </div>

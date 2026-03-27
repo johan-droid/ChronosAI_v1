@@ -19,7 +19,8 @@ test('should navigate from portal selection to login page', async () => {
     </AuthProvider>
   );
 
-  expect(screen.getByRole('heading', { name: /chronosai/i })).toBeInTheDocument();
+  const headings = screen.getAllByRole('heading', { name: /chronosai/i });
+  expect(headings).toHaveLength(2);
 
   const userPortalBtn = screen.getByRole('button', { name: /user portal/i });
   await user.click(userPortalBtn);

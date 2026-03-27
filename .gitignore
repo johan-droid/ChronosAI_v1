@@ -54,3 +54,10 @@ coverage
 .idx/
 !.idx/dev.nix
 !.idx/airules.md
+
+# Project-level temporary files
+logs/
+run-all.ps1
+frontend-org/
+ChronosAI/
+temp_test_flow.js

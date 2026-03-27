@@ -170,6 +170,13 @@ describe('Meeting reschedule/cancel endpoints', () => {
       .send({ email: otherEmail });
     expect(approve.status).toBe(200);
 
+    // pending request snapshot for contract
+    const pendingResponse = await api
+      .get(`/api/meetings/${meetingId}/pending-requests`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(pendingResponse.status).toBe(200);
+    expect(pendingResponse.body).toMatchSnapshot();
+
     // now non-owner can obtain join token
     const tokenResponse = await api
       .get(`/api/meetings/${meetingId}/join-token`)

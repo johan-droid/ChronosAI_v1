@@ -23,4 +23,8 @@ def parse_intent(request: ChatRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import os
+
+    # Explicit default AI service port. Change PORT env var to override.
+    port = int(os.getenv("AI_SERVICE_PORT", "8001"))
+    uvicorn.run(app, host="0.0.0.0", port=port)

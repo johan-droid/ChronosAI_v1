@@ -145,6 +145,30 @@ const getPendingRequestsController = async (req, res) => {
     }
 };
 
+// @desc    Toggle waiting room
+// @route   PUT /api/meetings/:id/waiting-room
+// @access  Private
+const toggleWaitingRoomController = async (req, res) => {
+    try {
+        const meetingId = req.params.id;
+        const { enabled } = req.body;
+
+        if (typeof enabled !== 'boolean') {
+            return res.status(400).json({ message: 'enabled boolean is required.' });
+        }
+
+        const result = await toggleWaitingRoom(meetingId, req.user._id, enabled);
+        if (!result.success) {
+            return res.status(400).json({ message: result.message });
+        }
+
+        return res.status(200).json({ message: result.message, meeting: result.meeting });
+    } catch (error) {
+        console.error('Error toggling waiting room:', error);
+        return res.status(500).json({ message: 'Server error when toggling waiting room.' });
+    }
+};
+
 // @desc    Generate join token
 // @route   GET /api/meetings/:id/join-token
 // @access  Private
@@ -277,6 +301,7 @@ module.exports = {
     getPendingRequestsController,
     getJoinTokenController,
     validateJoinTokenController,
+    toggleWaitingRoomController,
     rescheduleMeetingController,
     cancelMeetingController,
     sendCustomEmailController

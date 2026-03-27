@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import OAuthRedirect from './pages/OAuthRedirect';
 import JitsiRoom from './pages/JitsiRoom';
+import LandingPage3D from './pages/LandingPage3D';
 
 // The Frontend Bouncer: Protects routes from unauthenticated users
 const ProtectedRoute = ({ children }) => {
